@@ -1,216 +1,127 @@
-# Verificações GitHub splor-mg
+# GitHub Labels Sync Script
 
-Ferramenta para gerenciar e verificar repositórios da organização GitHub splor-mg.
+Script Python para sincronizar labels em todos os repositórios de uma organização GitHub.
 
 ## Funcionalidades
 
-### 🏷️ Gerenciador de Labels
-- **Labels Padrão**: Conjunto predefinido de labels organizadas por categoria
-- **Aplicação Automática**: Aplica labels a repositórios específicos ou toda a organização
-- **Sincronização**: Atualiza labels existentes para manter consistência
-- **Configuração Personalizada**: Permite definir labels específicas para sua organização
+- ✅ Lista todos os repositórios de uma organização
+- ✅ Cria/atualiza labels baseado em um template
+- ✅ Remove labels que não estão no template
+- ✅ Suporte a repositórios públicos e privados
+- ✅ Tratamento de erros robusto
+- ✅ Logs detalhados de todas as operações
 
-### 🔍 Verificações de Repositórios
-- Iteração sobre repositórios da organização
-- Análise de issues e pull requests
-- Verificações de configuração e compliance
+## Instalação
 
-## Estrutura do Projeto
+1. Clone este repositório ou baixe os arquivos
+2. Instale as dependências:
 
-```
-verificacoes_github_splor_mg/
-├── __init__.py
-├── main.py                 # Script principal de verificações
-├── labels_manager.py       # Gerenciador de labels
-├── custom_labels.py        # Script de labels personalizadas
-├── sync_labels.py          # Sincronização direta do YAML
-├── yaml_to_labels.py       # Conversor YAML para JSON
-├── test_labels.py          # Testes do gerenciador
-└── README_LABELS.md        # Documentação específica das labels
+```bash
+pip install -r requirements.txt
 ```
 
 ## Configuração
 
-### 1. Instalação das Dependências
+### 1. Criar Personal Access Token
 
-```bash
-# Usando Poetry (recomendado)
-poetry install
+1. Vá para **GitHub.com** → **Settings** → **Developer settings** → **Personal access tokens** → **Tokens (classic)**
+2. Clique em **Generate new token (classic)**
+3. Configure:
+   - **Note**: `bazingas-lab-labels-sync`
+   - **Expiration**: Escolha uma data futura
+   - **Scopes**: 
+     - `repo` (para acesso aos repositórios)
+     - `workflow` (opcional, para workflows)
 
-# Ou usando pip
-pip install -r requirements.txt
+### 2. Preparar Template de Labels
+
+Crie um arquivo `docs/labels-template` com o formato:
+
 ```
-
-### 2. Configuração do GitHub
-
-Crie um arquivo `.env` na raiz do projeto:
-
-```bash
-# Token de acesso do GitHub
-GITHUB_TOKEN=seu_token_aqui
-
-# Nome da organização
-GITHUB_ORG=splor-mg
+nome_label:descrição da label:cor_hex
+bug:Problema ou erro no código:ff0000
+feature:Nova funcionalidade:00ff00
+documentation:Melhorias na documentação:0000ff
 ```
-
-#### Obter Token do GitHub
-
-1. Acesse [GitHub Settings > Tokens](https://github.com/settings/tokens)
-2. Clique em "Generate new token (classic)"
-3. Selecione os escopos necessários:
-   - `repo` - Acesso completo aos repositórios
-   - `admin:org` - Gerenciar organização
-4. Copie o token e cole no arquivo `.env`
 
 ## Uso
 
-### Gerenciador de Labels
-
-#### Aplicar Labels Padrão
+### Uso Básico
 
 ```bash
-# A todos os repositórios
-python -m verificacoes_github_splor_mg.labels_manager --all-repos
-
-# A um repositório específico
-python -m verificacoes_github_splor_mg.labels_manager --repo nome-do-repo
-
-# Ver labels padrão
-python -m verificacoes_github_splor_mg.labels_manager
+python sync_labels.py --token SEU_TOKEN_AQUI --organization bazingas-lab
 ```
 
-#### Labels Personalizadas
+### Uso com Template Personalizado
 
 ```bash
-# Executar script interativo
-python -m verificacoes_github_splor_mg.custom_labels
-
-# Sincronizar diretamente do labels.yaml
-python -m verificacoes_github_splor_mg.sync_labels
-
-# Exportar configuração atual
-python -m verificacoes_github_splor_mg.labels_manager --export minhas_labels.json
-
-# Importar configuração personalizada
-python -m verificacoes_github_splor_mg.labels_manager --import minhas_labels.json --all-repos
+python sync_labels.py --token SEU_TOKEN_AQUI --organization bazingas-lab --template caminho/para/template
 ```
 
-#### Verificar Labels Existentes
+### Parâmetros
+
+- `--token`: GitHub Personal Access Token (obrigatório)
+- `--organization`: Nome da organização (obrigatório)
+- `--template`: Caminho para o arquivo de template (opcional, padrão: `docs/labels-template`)
+
+## Exemplo de Execução
 
 ```bash
-# Listar labels de um repositório
-python -m verificacoes_github_splor_mg.labels_manager --list nome-do-repo
+$ python sync_labels.py --token ghp_1234567890abcdef --organization bazingas-lab
+
+Iniciando sincronização de labels para organização: bazingas-lab
+Obtendo repositórios da organização: bazingas-lab
+Encontrados 5 repositórios
+Lendo template de labels de: docs/labels-template
+Template carregado com 8 labels
+
+Processando repositório: bazingas-lab/repo1
+  Atualizando label: bug
+  Atualizando label: feature
+  Atualizando label: documentation
+  Deletando label: old_label
+  Mantendo label: bug
+  Mantendo label: feature
+
+Sincronização concluída para 5 repositórios!
 ```
 
-### Script Principal
+## Vantagens sobre o GitHub Actions
 
-```bash
-# Executar verificações principais
-python -m verificacoes_github_splor_mg.main
-```
+- 🚀 **Execução local**: Não precisa esperar pela fila do GitHub Actions
+- 🔧 **Debug fácil**: Logs detalhados e tratamento de erros
+- 💻 **Controle total**: Execute quando quiser, pause, continue
+- 🔒 **Segurança**: Token não fica exposto em logs públicos
+- 📊 **Flexibilidade**: Fácil de modificar e adaptar
 
-### Testes
+## Permissões Necessárias
 
-```bash
-# Executar testes do gerenciador de labels
-python -m verificacoes_github_splor_mg.test_labels
-```
+Para que o script funcione, você precisa:
 
-## Estrutura das Labels Padrão
-
-### Tipo
-- `bug` - Algo não está funcionando corretamente
-- `new-feature` - Nova funcionalidade ou melhoria planejada
-- `chore` - Tarefas de manutenção e organização
-- `documentation` - Melhorias ou adições à documentação
-- `question` - Pergunta ou dúvida sobre o projeto
-
-### Status
-- `wontfix` - Issue não será corrigida ou implementada
-
-### Eventos/Reuniões
-- `meeting` - Relacionado a reuniões ou eventos
-
-> **Nota:** As labels são baseadas no arquivo `labels.yaml` da organização e podem ser personalizadas conforme necessário.
-
-## Exemplos de Uso
-
-### 1. Configuração Inicial
-
-```bash
-# 1. Configure o arquivo .env
-cp env.example .env
-# Edite .env com suas credenciais
-
-# 2. Aplique labels padrão a todos os repositórios
-python -m verificacoes_github_splor_mg.labels_manager --all-repos
-
-# OU use o script de sincronização direta do YAML
-python -m verificacoes_github_splor_mg.sync_labels
-```
-
-### 2. Personalização de Labels
-
-```bash
-# 1. Exporte as labels padrão
-python -m verificacoes_github_splor_mg.labels_manager --export labels_padrao.json
-
-# 2. Edite o arquivo JSON conforme necessário
-
-# 3. Aplique as labels personalizadas
-python -m verificacoes_github_splor_mg.labels_manager --import labels_padrao.json --all-repos
-```
-
-### 3. Verificação de Labels
-
-```bash
-# Verificar labels em um repositório específico
-python -m verificacoes_github_splor_mg.labels_manager --list meu-projeto
-
-# Ver todas as labels padrão disponíveis
-python -m verificacoes_github_splor_mg.labels_manager
-```
-
-## Segurança
-
-- **Nunca** commite o arquivo `.env` com tokens reais
-- Use tokens com escopos mínimos necessários
-- Revogue tokens não utilizados
-- Considere usar GitHub Apps para projetos em produção
+1. **Ser owner/admin** da organização, OU
+2. **Ter permissão de admin** nos repositórios específicos
 
 ## Troubleshooting
 
-### Erro de Autenticação
-- Verifique se o `GITHUB_TOKEN` está correto
-- Confirme se o token tem os escopos necessários
-- Verifique se o token não expirou
+### Erro: "Not Found" ao listar repositórios
+- Verifique se o token tem permissão `repo`
+- Confirme se você tem acesso à organização
 
-### Erro de Organização
-- Confirme se o `GITHUB_ORG` está correto
-- Verifique se você tem acesso à organização
-- Confirme se o token tem permissão para a organização
+### Erro: "Forbidden" ao criar labels
+- Verifique se você tem permissão de admin no repositório
+- Confirme se o token tem escopo `repo`
 
-### Labels Não Aplicadas
-- Verifique se o repositório existe
-- Confirme se você tem permissão para criar/editar labels
-- Verifique se o repositório não está arquivado
+### Labels não são criadas
+- Verifique o formato do arquivo de template
+- Confirme se as cores são válidas (formato hex)
 
-## Contribuição
+## Estrutura do Projeto
 
-Para adicionar novas funcionalidades:
-
-1. Fork o repositório
-2. Crie uma branch para sua feature
-3. Implemente as mudanças
-4. Adicione testes se aplicável
-5. Envie um Pull Request
-
-## Documentação Adicional
-
-- [README das Labels](verificacoes_github_splor_mg/README_LABELS.md) - Documentação detalhada do gerenciador de labels
-- [Script de Labels Personalizadas](verificacoes_github_splor_mg/custom_labels.py) - Exemplo de configuração personalizada
-- [Testes](verificacoes_github_splor_mg/test_labels.py) - Scripts de teste
-
-## Licença
-
-Este projeto está sob a mesma licença do repositório principal.
+```
+.
+├── sync_labels.py          # Script principal
+├── requirements.txt        # Dependências Python
+├── README.md              # Este arquivo
+└── docs/
+    └── labels-template    # Template de labels
+```
