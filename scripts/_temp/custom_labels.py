@@ -1,4 +1,4 @@
-#!/usr/bin/env python3
+ba#!/usr/bin/env python3
 """
 Script de exemplo para configuração personalizada de labels.
 Modifique este arquivo para definir suas próprias labels padrão.
