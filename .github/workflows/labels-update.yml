@@ -38,12 +38,9 @@ jobs:
         run: |
           python scripts/repos_list.py
           echo "✅ Repositórios obtidos com sucesso"
-          python scripts/repos_list.py
-          echo "✅ Repositórios obtidos com sucesso"
         env:
           GITHUB_TOKEN: ${{ secrets.GH_TOKEN }}
 
-      - name: Sync Labels for all repositories
       - name: Sync Labels for all repositories
         run: |
           python scripts/labels_sync.py
