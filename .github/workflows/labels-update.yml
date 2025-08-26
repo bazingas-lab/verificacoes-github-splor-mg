@@ -31,10 +31,28 @@ jobs:
         with:
           python-version: '3.11'
 
+      - name: Install Poetry
+        uses: snok/install-poetry@v1
+        with:
+          version: latest
+          virtualenvs-create: true
+          virtualenvs-in-project: true
+
+      - name: Load cached venv
+        id: cached-poetry-dependencies
+        uses: actions/cache@v3
+        with:
+          path: .venv
+          key: venv-${{ runner.os }}-${{ steps.setup-python.outputs.python-version }}-${{ hashFiles('**/poetry.lock') }}
+
       - name: Install dependencies
+        if: steps.cached-poetry-dependencies.outputs.cache-hit != 'true'
+        run: poetry install --no-interaction --no-root
+
+      - name: Activate Poetry environment
         run: |
-          python -m pip install --upgrade pip
-          pip install -r requirements.txt
+          echo "POETRY_VENV_PATH=$(poetry env info --path)" >> $GITHUB_ENV
+          echo "$(poetry env info --path)/bin" >> $GITHUB_PATH
 
       - name: Get organization repositories
         id: get_repos
