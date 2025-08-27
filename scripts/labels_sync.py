@@ -12,8 +12,8 @@ import os
 import time
 from datetime import datetime
 
-# Configurações
-organization = 'bazingas-lab'
+# Configurações caso 
+organization = 'splor-mg'
 repos_file = 'docs/repos_list.csv'
 labels_file = 'docs/labels.yaml'
 
@@ -98,60 +98,28 @@ def sync_labels_for_repo(repo_name, labels, token, organization):
             current_label_names = {label['name'] for label in current_labels}
             print(f"    📊 {len(current_labels)} labels encontradas no repositório")
         else:
-            print(f"    ⚠️  Não foi possível obter labels atuais: {current_response.status_code}")
-            current_label_names = set()
+            print(f"    ❌ Erro ao obter labels atuais: {current_response.status_code}")
+            return 0, 0, 1
     except Exception as e:
-        print(f"    ⚠️  Erro ao obter labels atuais: {e}")
-        current_label_names = set()
+        print(f"    ❌ Erro ao obter labels atuais: {e}")
+        return 0, 0, 1
     
-    # Criar conjunto de labels definidas no YAML
-    yaml_label_names = {label['name'] for label in labels}
-    
-    # Identificar labels para deletar (estão no repositório mas não no YAML)
-    labels_to_delete = current_label_names - yaml_label_names
-    
-    if labels_to_delete:
-        print(f"  🗑️  Labels para deletar: {', '.join(labels_to_delete)}")
-        
-        for label_name in labels_to_delete:
-            print(f"    🗑️  Deletando label: {label_name}")
-            delete_url = f"https://api.github.com/repos/{organization}/{repo_name}/labels/{label_name}"
-            
-            try:
-                delete_response = requests.delete(delete_url, headers=headers)
-                if delete_response.status_code == 204:
-                    print(f"      ✅ Label '{label_name}' deletada com sucesso")
-                    deleted_count += 1
-                else:
-                    print(f"      ❌ Erro ao deletar label '{label_name}': {delete_response.status_code}")
-                    error_count += 1
-            except Exception as e:
-                print(f"      ❌ Erro ao deletar label '{label_name}': {e}")
-                error_count += 1
-            
-            time.sleep(0.1)  # Pausa entre deleções
-    else:
-        print("  ✅ Nenhuma label extra para deletar")
-    
-    # Agora processar as labels do YAML (criar/atualizar)
-    print("  🏷️  Processando labels do YAML...")
-    
+    # Processar cada label do arquivo YAML
     for label in labels:
         label_name = label['name']
         label_color = label['color']
         label_description = label.get('description', '')
         
-        print(f"    🏷️  Processando label: {label_name}")
-        
-        # Primeiro tenta atualizar a label existente
-        update_url = f"https://api.github.com/repos/{organization}/{repo_name}/labels/{label_name}"
-        update_data = {
-            'name': label_name,
-            'color': label_color,
-            'description': label_description
-        }
+        print(f"  🏷️  Processando label: {label_name}")
         
         try:
+            # Tentar atualizar a label existente
+            update_url = f"https://api.github.com/repos/{organization}/{repo_name}/labels/{label_name}"
+            update_data = {
+                'color': label_color,
+                'description': label_description
+            }
+            
             response = requests.patch(update_url, headers=headers, json=update_data)
             
             if response.status_code == 200:
@@ -187,6 +155,26 @@ def sync_labels_for_repo(repo_name, labels, token, organization):
     
     print(f"  📊 Resumo: {success_count} labels processadas, {deleted_count} deletadas, {error_count} erros")
     return success_count, deleted_count, error_count
+
+def sync_repository_labels(organization, repo_name, token, labels_file):
+    """Sincroniza labels para um repositório específico"""
+    print(f"🔄 Sincronizando labels para repositório: {organization}/{repo_name}")
+    
+    # Carregar labels do arquivo YAML
+    labels = load_labels_from_yaml(labels_file)
+    if not labels:
+        print("❌ Não foi possível carregar as labels do arquivo YAML")
+        return False
+    
+    # Sincronizar labels para o repositório
+    success, deleted, errors = sync_labels_for_repo(repo_name, labels, token, organization)
+    
+    if errors == 0:
+        print(f"✅ Labels sincronizadas com sucesso para {organization}/{repo_name}")
+        return True
+    else:
+        print(f"⚠️  Sincronização concluída com {errors} erros para {organization}/{repo_name}")
+        return False
 
 def main():
     # Carregar variáveis de ambiente

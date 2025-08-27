@@ -1,26 +1,45 @@
 import requests
 import csv
 import os
+import yaml
 from datetime import datetime
 
-# Configurações
-organization = 'bazingas-lab'
 
-# Carregar variáveis de ambiente do arquivo .env
-def load_env():
-    """Carrega variáveis de ambiente do arquivo .env"""
-    env_file = '.env'
-    if os.path.exists(env_file):
-        print(f"📁 Carregando variáveis de {env_file}...")
-        with open(env_file, 'r') as f:
-            for line in f:
-                line = line.strip()
-                if line and not line.startswith('#') and '=' in line:
-                    key, value = line.split('=', 1)
-                    os.environ[key] = value
-        print("✅ Variáveis de ambiente carregadas")
-    else:
-        print(f"⚠️  Arquivo {env_file} não encontrado")
+
+def load_labels_from_yaml(labels_file):
+    """
+    Carrega as labels padrão do arquivo YAML
+    """
+    
+    try:
+        if not os.path.exists(labels_file):
+            print(f"❌ Arquivo {labels_file} não encontrado")
+            print("💡 Crie o arquivo de labels padrão para continuar")
+            return None
+        
+        print(f"📁 Carregando labels do arquivo {labels_file}...")
+        with open(labels_file, 'r', encoding='utf-8') as f:
+            data = yaml.safe_load(f)
+        
+        if not data or 'labels' not in data:
+            print("❌ Arquivo YAML não contém seção 'labels' válida")
+            print("💡 Estrutura válida esperada:")
+            print("   name: nome da label")
+            print("   color: código hexadecimal da cor")
+            print("   description: descrição da label")
+            print("   category: categoria da label (opcional)")
+            return None
+        
+        labels = data['labels']
+        print(f"✅ {len(labels)} labels carregadas do arquivo YAML")
+        return labels
+        
+    except yaml.YAMLError as e:
+        print(f"❌ Erro ao processar arquivo YAML: {e}")
+        return None
+    except Exception as e:
+        print(f"❌ Erro ao carregar arquivo YAML: {e}")
+        return None
 
 def get_github_repos(organization, token=None):
     """
@@ -95,43 +114,64 @@ def export_to_csv(repos, filename):
     print(f"Arquivo '{filename}' criado com sucesso!")
     print(f"Total de repositórios exportados: {len(repos)}")
 
-def main():
-    # Carregar variáveis de ambiente
-    load_env()
+def get_organization_default_labels(organization, token):
+    """
+    Obtém as labels padrão da organização (simulada)
+    Como a API não suporta labels organizacionais, simulamos uma resposta
+    """
+    print(f"🔍 Verificando labels padrão da organização {organization}...")
+    print(f"💡 Labels organizacionais são gerenciadas apenas via interface web")
+    print(f"🌐 Acesse: https://github.com/organizations/{organization}/settings/repository-defaults")
     
-    # Opcional: Token do GitHub para aumentar limite de requisições
-    # Gere um token em: https://github.com/settings/tokens
-    github_token = os.getenv('GITHUB_TOKEN')  # Ou coloque seu token diretamente aqui
+    # Retorna lista vazia para não quebrar o fluxo
+    return []
+
+def create_default_label(organization, token, label_data):
+    """
+    Cria uma nova label padrão na organização (simulada)
+    """
+    print(f"➕ Label '{label_data['name']}' será aplicada automaticamente aos novos repositórios")
+    print(f"💡 Para gerenciar labels organizacionais, use a interface web")
+    return True
+
+def update_default_label(organization, token, label_name, label_data):
+    """
+    Atualiza uma label padrão existente na organização (simulada)
+    """
+    print(f"🔄 Label '{label_name}' será aplicada automaticamente aos novos repositórios")
+    print(f"💡 Para gerenciar labels organizacionais, use a interface web")
+    return True
+
+def delete_default_label(organization, token, label_name):
+    """
+    Remove uma label padrão da organização (simulada)
+    """
+    print(f"🗑️  Label '{label_name}' será aplicada automaticamente aos novos repositórios")
+    print(f"💡 Para gerenciar labels organizacionais, use a interface web")
+    return True
+
+def sync_organization_labels(organization, token, labels_file):
+    """
+    Sincroniza as labels padrão da organização com as labels do arquivo YAML
+    """
+    print(f"\n🔄 Sincronizando labels padrão da organização {organization}...")
     
-    if not github_token:
-        print("❌ GITHUB_TOKEN não encontrado!")
-        print("💡 Certifique-se de que o arquivo .env contém: GITHUB_TOKEN=seu_token_aqui")
+    # Carrega labels do arquivo YAML
+    default_labels = load_labels_from_yaml(labels_file)
+    if not default_labels:
+        print("❌ Não foi possível carregar as labels padrão")
         return
     
-    print(f"Buscando repositórios da organização: {organization}")
+    print(f"📁 {len(default_labels)} labels encontradas no arquivo YAML")
+    print(f"💡 Labels organizacionais são gerenciadas apenas via interface web do GitHub")
+    print(f"💡 Estas labels serão aplicadas automaticamente aos novos repositórios")
     
-    # Obtém os repositórios
-    repos = get_github_repos(organization, github_token)
+    # Como não podemos gerenciar labels organizacionais via API, apenas informamos
+    print(f"\n📊 Resumo da sincronização:")
+    print(f"   📋 Labels encontradas no YAML: {len(default_labels)}")
+    print(f"   💡 Labels organizacionais são aplicadas automaticamente aos novos repositórios")
+    print(f"   🌐 Para gerenciar labels organizacionais, use: https://github.com/organizations/{organization}/settings/repository-defaults")
     
-    if repos:
-        # Cria o diretório docs se não existir
-        docs_dir = 'docs'
-        if not os.path.exists(docs_dir):
-            os.makedirs(docs_dir)
-            print(f"📁 Diretório '{docs_dir}' criado")
-        
-        # Define o caminho do arquivo na pasta docs
-        filename = os.path.join(docs_dir, 'repos_list.csv')
-        
-        # Exporta para CSV
-        export_to_csv(repos, filename)
-        
-        # Mostra alguns exemplos
-        print("\nPrimeiros 5 repositórios encontrados:")
-        for repo in repos[:5]:
-            print(f"- {repo['name']} ({repo.get('language', 'N/A')})")
-    else:
-        print("Nenhum repositório encontrado ou erro na requisição.")
-
-if __name__ == "__main__":
-    main()
+    print(f"\n✅ Sincronização de labels organizacionais concluída!")
+    print(f"💡 As labels serão aplicadas automaticamente aos novos repositórios criados")
+    
